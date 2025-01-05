@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイルをドラック＆ドロップ♡</title>
+    <style>
+        #drop-area {
+            width: 80%;
+            height: 300px;
+            border: 2px dashed #00f;
+            margin: 50px auto;
+            text-align: center;
+            line-height: 300px;
+            font-size: 24px;
+            color: #00f;
+            background-color: #f0f0f0;
+        }
+        #drop-area.hover {
+            background-color: #e0f7fa;
+        }
+    </style>
+</head>
+<body>
+
+<div id="drop-area">
+    ファイルをドラック＆ドロップ♡
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+<script>
+    const dropArea = document.getElementById('drop-area');
+
+    dropArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropArea.classList.add('hover');
+    });
+
+    dropArea.addEventListener('dragleave', () => {
+        dropArea.classList.remove('hover');
+    });
+
+    dropArea.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropArea.classList.remove('hover');
+        const file = event.dataTransfer.files[0];
+
+        // ファイルのバイナリを読み込み、ZIPファイルかどうかをチェック
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const arr = new Uint8Array(e.target.result);
+            const signature = arr.subarray(0, 2); // ZIPファイルは"PK"で始まる
+
+            // "PK"（0x50, 0x4B）をチェック
+            if (signature[0] === 0x50 && signature[1] === 0x4B) {
+                // ZIPファイルを解凍
+                JSZip.loadAsync(arr).then(zip => {
+                    const txtFiles = [];
+                    Object.keys(zip.files).forEach((filename) => {
+                        if (filename.endsWith('.txt')) {
+                            txtFiles.push(filename);
+                        }
+                    });
+
+                    if (txtFiles.length > 0) {
+                        // ダイアログ表示
+                        const userChoice = window.confirm(`${txtFiles[0]}のファイルが見つかりました。電子レンジでチン♪しますか？`);
+
+                        if (userChoice) {
+                            // チン♪された場合、ファイルをダウンロード
+                            zip.files[txtFiles[0]].async('blob').then((blob) => {
+                                const a = document.createElement('a');
+                                a.href = URL.createObjectURL(blob);
+                                a.download = txtFiles[0];
+                                a.click();
+                            });
+                        } else {
+                            alert('キャンセル谷岡');
+                        }
+                    } else {
+                        alert('ZIP内に.txtファイルがありません');
+                    }
+                }).catch(error => {
+                    alert('読み込めないっぴ、RainbowWAVE「カスタムファイル」（多色餅製）以外読込めないっぴ');
+                });
+            } else {
+                alert('読み込めないっぴ、RainbowWAVE「カスタムファイル」（多色餅製）以外読込めないっぴ');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+</script>
+
+</body>
+</html>

@@ -55,30 +55,37 @@
             if (signature[0] === 0x50 && signature[1] === 0x4B) {
                 // ZIPファイルを解凍
                 JSZip.loadAsync(arr).then(zip => {
-                    const txtFiles = [];
-                    Object.keys(zip.files).forEach((filename) => {
-                        if (filename.endsWith('.txt')) {
-                            txtFiles.push(filename);
-                        }
-                    });
+                    const files = Object.keys(zip.files);
 
-                    if (txtFiles.length > 0) {
-                        // ダイアログ表示
-                        const userChoice = window.confirm(`${txtFiles[0]}のファイルが見つかりました。電子レンジでチン♪しますか？`);
+                    // customsetting.tsmc が存在するかチェック
+                    if (!files.includes('customsetting.tsmc')) {
+                        alert('ZIPファイル内に "customsetting.tsmc" が見つかりません。ダウンロードできません。');
+                        return; // "customsetting.tsmc" がない場合は処理を中止
+                    }
+
+                    if (files.length > 0) {
+                        // ZIP内のファイルをリストアップ
+                        const fileList = files.map((filename) => `<li><a href="#" data-filename="${filename}">${filename}</a></li>`).join('');
+                        const fileListHTML = `<ul>${fileList}</ul>`;
+                        const userChoice = window.confirm(`ZIPファイル内のファイル:\n\n${fileListHTML}\nこの中からダウンロードしたいファイルを選んでください。`);
 
                         if (userChoice) {
-                            // チン♪された場合、ファイルをダウンロード
-                            zip.files[txtFiles[0]].async('blob').then((blob) => {
-                                const a = document.createElement('a');
-                                a.href = URL.createObjectURL(blob);
-                                a.download = txtFiles[0];
-                                a.click();
-                            });
-                        } else {
-                            alert('キャンセル谷岡');
+                            // ファイル選択後、ダウンロード処理
+                            const selectedFile = prompt('ダウンロードしたいファイル名を入力してください（例: example.txt）');
+
+                            if (selectedFile && files.includes(selectedFile)) {
+                                zip.files[selectedFile].async('blob').then((blob) => {
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(blob);
+                                    a.download = selectedFile;
+                                    a.click();
+                                });
+                            } else {
+                                alert('ファイルが見つかりません');
+                            }
                         }
                     } else {
-                        alert('ZIP内に.txtファイルがありません');
+                        alert('ZIP内にファイルがありません');
                     }
                 }).catch(error => {
                     alert('読み込めないっぴ、RainbowWAVE「カスタムファイル」（多色餅製）以外読込めないっぴ');
